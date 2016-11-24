@@ -6,19 +6,17 @@
 #
 #############################################
 
-import tinydb import TinyDB, Query
+from tinydb import TinyDB, Query
 import random
 from datetime import datetime
-import json
 
-ERR_FAIL_TO_ADD_USER = -1
+ERR_FAILED_TO_ADD_USER = -1
 ERR_ALREADY_EXISTS = -2
 
 
 class Tattle_dbInterface:
     # Variables
     database_file = "tattle_users.json"
-    current_users = []
 
     # Initialize the constructor for this class
     def __init__(self):
@@ -30,7 +28,7 @@ class Tattle_dbInterface:
         query = Query()
 
         # result is an array of usernames of this group chat
-        result = db.search( (query.chatid == chatid) && (query.usernames == usernames) )
+        result = db.search( query.chatid == chatid )
         usernames = result[0]["usernames"]
         
         # Check if username is in the list
@@ -39,46 +37,56 @@ class Tattle_dbInterface:
         else:
             return False
     
+    # Get list of usernames from db given a chatid
+    def getUsers(self, chatid):
+        db = TinyDB(database_file)
+        query = Query()
+
+        results = db.search( query.chatid == chatid)
+        usernames = results[0]["usernames"] 
+
+        return usernames
+
     # Add user to tattle's database
     def addUser(self, chatid, username):
         db = TinyDB(database_file)
         query = Query()
 
         # Error Handling : Check if user is already added
-        if self.CheckUserExists(chaid, username) == True:
+        if self.CheckUserExists(chatid, username) == True:
             return ERR_ALREADY_EXISTS
-        
-        chat_usernames = db.insert( {'chatid': chatid, 'username': username} )
+        else:
+            usernames = getUsers(chatid)
+            usernames.append(username)
+            didSucceed = db.update({'usernames': usernames}, query.chatid == chatid)
 
         # Error handling : Check if successfully added
-        if new_elementID == []:
-            return ERR_FAIL_TO_ADD_USER
+        if didSucceed != [1]:
+            return ERR_FAILED_TO_ADD_USER
         
         return 0
 
     # Remove user from tattle's database
     def removeUser(self, chatid, username):
-        pass
+        pass # Don't think we need this
 
-    # Get the user count of this group
-    def getUsersCount(self, chatid):
-        db = TinyDB(database_file)
-        query = Query()
-
-        results = db.search((query.chaid == chatid))
 
     # Pick a random user from the database of this current chat
     def pickUser(self, chatid):
         db = TinyDB(database_file)
         query = Query()
         current_time = datetime.now()
-
-        result = db.search(chatid == chatid)
-
+        
+        # Get users of this group chat
+        result = db.search(query.chatid == chatid)
         users = result[0]["usernames"]
 
+        # Pick a random user
         user_count = len(users) 
-        random_number = random.randint(0, user_count)
+        random_number = random.randint(0, user_count-1)
         chosen_user = users[random_number]
 
         return chosen_user
+
+
+
